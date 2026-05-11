@@ -2,71 +2,128 @@
 <html lang="ja">
 <head>
     <meta charset="UTF-8">
-    <title>Python画像変換ツール</title>
+    <title>画像変換ソフト Web版</title>
     <link rel="stylesheet" href="https://pyscript.net/releases/2024.1.1/core.css" />
     <script type="module" src="https://pyscript.net/releases/2024.1.1/core.js"></script>
     <style>
-        body { font-family: sans-serif; text-align: center; padding: 20px; }
-        #output-image { margin-top: 20px; max-width: 100%; border: 1px solid #ccc; }
-        .loading { color: red; }
+        body { font-family: sans-serif; text-align: center; background: #f0f0f0; padding: 20px; }
+        .controls { background: white; padding: 15px; border-radius: 10px; display: inline-block; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
+        .preview { margin-top: 20px; }
+        canvas { display: none; }
+        img { max-width: 80%; border: 1px solid #ccc; }
     </style>
 </head>
 <body>
 
-    <h2>Python画像変換（白黒）</h2>
+<div class="controls">
+    <h3>画像変換ソフト</h3>
+    <input type="file" id="file_upload" accept="image/*"><br><br>
     
-    <!-- 画像を選択するボタン -->
-    <input type="file" id="file-upload" accept="image/*">
+    <label>モザイク度 (0-7): </label>
+    <input type="range" id="mosaic_scale" min="0" max="7" value="0"><br>
     
-    <div id="status"></div>
-    <h3>変換結果：</h3>
-    <div id="image-container">
-        <img id="output-image" />
-    </div>
+    <input type="checkbox" id="dark_mode"> ダークモード
+    <input type="checkbox" id="sirokuro_mode"> 白黒モード<br><br>
+    
+    <label>かぶせる色: </label>
+    <input type="color" id="color_picker" value="#ff0000">
+    <button id="reset_color">色を初期化</button><br><br>
+    
+    <input type="text" id="file_name" placeholder="保存ファイル名" value="new_image"><br><br>
+    <button id="process_btn" style="padding: 10px 20px; background: #007bff; color: white; border: none; border-radius: 5px;">変換して保存</button>
+</div>
 
-    <!-- PyScriptの設定：Pillowライブラリを使用 -->
-    <py-config>
-        packages = ["Pillow"]
-    </py-config>
+<div class="preview">
+    <p>プレビュー：</p>
+    <img id="output_image" />
+</div>
 
-    <script type="py">
-        import io
-        import base64
-        from pyscript import document, window
-        from PIL import Image
-        from pyodide.ffi import create_proxy
+<py-config>
+    packages = ["Pillow"]
+</py-config>
 
-        async def process_image(event):
-            # ファイルを取得
-            file_list = event.target.files
-            if len(file_list) == 0:
-                return
-            
-            file = file_list.item(0)
-            
-            # 画像データを読み込む
-            array_buffer = await file.arrayBuffer()
-            image_bytes = array_buffer.to_bytes()
-            
-            # --- GitHubのロジック部分 ---
-            # Pillowで画像を開いて白黒(L)に変換
-            img = Image.open(io.BytesIO(image_bytes))
-            gray_img = img.convert("L")
-            # ---------------------------
+<script type="py">
+import io
+import base64
+from pyscript import document, window
+from PIL import Image
+from pyodide.ffi import create_proxy
 
-            # ブラウザで表示するためにBase64形式に変換
-            buffered = io.BytesIO()
-            gray_img.save(buffered, format="PNG")
-            img_str = base64.b64encode(buffered.getvalue()).decode()
-            
-            # HTMLの<img>タグに結果を表示
-            document.querySelector("#output-image").src = f"data:image/png;base64,{img_str}"
+selected_rgb = None
 
-        # ファイルが選択されたら関数を実行するように設定
-        upload_element = document.querySelector("#file-upload")
-        upload_proxy = create_proxy(process_image)
-        upload_element.addEventListener("change", upload_proxy)
-    </script>
+async def run_process(event):
+    global selected_rgb
+    
+    file_list = document.querySelector("#file_upload").files
+    if len(file_list) == 0:
+        window.alert("ファイルを選択してください")
+        return
+
+    # 設定の取得
+    mosaic_val = int(document.querySelector("#mosaic_scale").value)
+    dark_mode = document.querySelector("#dark_mode").checked
+    sirokuro_mode = document.querySelector("#sirokuro_mode").checked
+    hex_color = document.querySelector("#color_picker").value
+    file_name = document.querySelector("#file_name").value
+
+    # 画像の読み込み
+    file = file_list.item(0)
+    array_buffer = await file.arrayBuffer()
+    img = Image.open(io.BytesIO(array_buffer.to_bytes())).convert("RGBA")
+    w, h = img.size
+
+    # 1. モザイク処理 (移植)
+    if mosaic_val > 0:
+        c = 2**(9 - (mosaic_val + 1))
+        f, g = int(w/(300/c)), int(h/(300/c))
+        if f > 0 and g > 0:
+            img = img.resize((f, g), resample=Image.NEAREST).resize((w, h), resample=Image.NEAREST)
+
+    # 2. 色をかぶせる (移植)
+    if selected_rgb:
+        alpha = 100
+        color_layer = Image.new("RGBA", img.size, selected_rgb + (alpha,))
+        img = Image.alpha_composite(img, color_layer)
+
+    # 3. ダークモード・白黒モード (移植)
+    if dark_mode:
+        if sirokuro_mode:
+            img = img.convert("L").convert("1")
+        else:
+            img = img.convert("L")
+    elif sirokuro_mode:
+        img = img.convert("1")
+
+    # 表示・ダウンロード処理
+    buffered = io.BytesIO()
+    save_img = img.convert("RGB")
+    save_img.save(buffered, format="PNG")
+    img_str = base64.b64encode(buffered.getvalue()).decode()
+    
+    # プレビュー表示
+    document.querySelector("#output_image").src = f"data:image/png;base64,{img_str}"
+    
+    # ダウンロード実行
+    link = document.createElement("a")
+    link.href = f"data:image/png;base64,{img_str}"
+    link.download = f"{file_name}.png"
+    link.click()
+
+def set_color(event):
+    global selected_rgb
+    hex_val = event.target.value.lstrip('#')
+    selected_rgb = tuple(int(hex_val[i:i+2], 16) for i in (0, 2, 4))
+
+def reset_color(event):
+    global selected_rgb
+    selected_rgb = None
+    window.alert("色をリセットしました")
+
+# イベント登録
+document.querySelector("#process_btn").addEventListener("click", create_proxy(run_process))
+document.querySelector("#color_picker").addEventListener("input", create_proxy(set_color))
+document.querySelector("#reset_color").addEventListener("click", create_proxy(reset_color))
+</script>
 
 </body>
 </html>
