@@ -2,24 +2,52 @@
 <html lang="ja">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Python in HTML</title>
-    <!-- PyScriptを読み込むための魔法のコード -->
+    <title>Python計算アプリ</title>
     <link rel="stylesheet" href="https://pyscript.net/releases/2024.1.1/core.css" />
     <script type="module" src="https://pyscript.net/releases/2024.1.1/core.js"></script>
+    <style>
+        body { font-family: sans-serif; margin: 20px; }
+        input { padding: 5px; margin: 5px; }
+        button { padding: 5px 15px; cursor: pointer; }
+        #result { margin-top: 20px; font-weight: bold; color: blue; }
+    </style>
 </head>
 <body>
 
-    <h2>GitHubのPythonを動かしたい！</h2>
-    <div id="output"></div>
+    <h2>Python計算ツール (GitHub test.py移植版)</h2>
+    
+    <p>数値を入力してください：</p>
+    <input type="number" id="num_input" placeholder="数字を入力">
+    <button py-click="calculate">計算実行</button>
+
+    <div id="result"></div>
 
     <script type="py">
-        # ここにGitHubのプログラムの中身を貼り付けるか、
-        # 外部ファイルとして読み込みます
-        from pyscript import display
-        
-        message = "PythonがHTMLの中で動いています！"
-        display(message, target="output")
+        from pyscript import document
+
+        def calculate(event):
+            # HTMLの入力欄から値を取得
+            input_text = document.querySelector("#num_input").value
+            
+            if not input_text:
+                document.querySelector("#result").innerText = "数字を入力してください"
+                return
+
+            # --- ここからGitHubのtest.pyのロジック ---
+            try:
+                # 入力された値を数値に変換
+                val = float(input_text)
+                
+                # 例：入力された値に100を足す計算（GitHubのコードに合わせて変更してください）
+                res = val + 100 
+                
+                output_msg = f"計算結果: {res}"
+            except ValueError:
+                output_msg = "有効な数字を入力してください"
+            # ---------------------------------------
+
+            # 結果を表示
+            document.querySelector("#result").innerText = output_msg
     </script>
 
 </body>
