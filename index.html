@@ -2,52 +2,70 @@
 <html lang="ja">
 <head>
     <meta charset="UTF-8">
-    <title>Python計算アプリ</title>
+    <title>Python画像変換ツール</title>
     <link rel="stylesheet" href="https://pyscript.net/releases/2024.1.1/core.css" />
     <script type="module" src="https://pyscript.net/releases/2024.1.1/core.js"></script>
     <style>
-        body { font-family: sans-serif; margin: 20px; }
-        input { padding: 5px; margin: 5px; }
-        button { padding: 5px 15px; cursor: pointer; }
-        #result { margin-top: 20px; font-weight: bold; color: blue; }
+        body { font-family: sans-serif; text-align: center; padding: 20px; }
+        #output-image { margin-top: 20px; max-width: 100%; border: 1px solid #ccc; }
+        .loading { color: red; }
     </style>
 </head>
 <body>
 
-    <h2>Python計算ツール (GitHub test.py移植版)</h2>
+    <h2>Python画像変換（白黒）</h2>
     
-    <p>数値を入力してください：</p>
-    <input type="number" id="num_input" placeholder="数字を入力">
-    <button py-click="calculate">計算実行</button>
+    <!-- 画像を選択するボタン -->
+    <input type="file" id="file-upload" accept="image/*">
+    
+    <div id="status"></div>
+    <h3>変換結果：</h3>
+    <div id="image-container">
+        <img id="output-image" />
+    </div>
 
-    <div id="result"></div>
+    <!-- PyScriptの設定：Pillowライブラリを使用 -->
+    <py-config>
+        packages = ["Pillow"]
+    </py-config>
 
     <script type="py">
-        from pyscript import document
+        import io
+        import base64
+        from pyscript import document, window
+        from PIL import Image
+        from pyodide.ffi import create_proxy
 
-        def calculate(event):
-            # HTMLの入力欄から値を取得
-            input_text = document.querySelector("#num_input").value
-            
-            if not input_text:
-                document.querySelector("#result").innerText = "数字を入力してください"
+        async def process_image(event):
+            # ファイルを取得
+            file_list = event.target.files
+            if len(file_list) == 0:
                 return
+            
+            file = file_list.item(0)
+            
+            # 画像データを読み込む
+            array_buffer = await file.arrayBuffer()
+            image_bytes = array_buffer.to_bytes()
+            
+            # --- GitHubのロジック部分 ---
+            # Pillowで画像を開いて白黒(L)に変換
+            img = Image.open(io.BytesIO(image_bytes))
+            gray_img = img.convert("L")
+            # ---------------------------
 
-            # --- ここからGitHubのtest.pyのロジック ---
-            try:
-                # 入力された値を数値に変換
-                val = float(input_text)
-                
-                # 例：入力された値に100を足す計算（GitHubのコードに合わせて変更してください）
-                res = val + 100 
-                
-                output_msg = f"計算結果: {res}"
-            except ValueError:
-                output_msg = "有効な数字を入力してください"
-            # ---------------------------------------
+            # ブラウザで表示するためにBase64形式に変換
+            buffered = io.BytesIO()
+            gray_img.save(buffered, format="PNG")
+            img_str = base64.b64encode(buffered.getvalue()).decode()
+            
+            # HTMLの<img>タグに結果を表示
+            document.querySelector("#output-image").src = f"data:image/png;base64,{img_str}"
 
-            # 結果を表示
-            document.querySelector("#result").innerText = output_msg
+        # ファイルが選択されたら関数を実行するように設定
+        upload_element = document.querySelector("#file-upload")
+        upload_proxy = create_proxy(process_image)
+        upload_element.addEventListener("change", upload_proxy)
     </script>
 
 </body>
