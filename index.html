@@ -1,1 +1,26 @@
-<h1>Hello World</h1>
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Python in HTML</title>
+    <!-- PyScriptを読み込むための魔法のコード -->
+    <link rel="stylesheet" href="https://pyscript.net/releases/2024.1.1/core.css" />
+    <script type="module" src="https://pyscript.net/releases/2024.1.1/core.js"></script>
+</head>
+<body>
+
+    <h2>GitHubのPythonを動かしたい！</h2>
+    <div id="output"></div>
+
+    <script type="py">
+        # ここにGitHubのプログラムの中身を貼り付けるか、
+        # 外部ファイルとして読み込みます
+        from pyscript import display
+        
+        message = "PythonがHTMLの中で動いています！"
+        display(message, target="output")
+    </script>
+
+</body>
+</html>
