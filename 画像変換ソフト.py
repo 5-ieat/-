@@ -65,7 +65,7 @@ def dispPhoto(fpath, k_k, value, dark_mode, sirokuro_mode):
     
     # 保存処理 (元のコードの保存ロジックを維持)
     user_home = os.path.expanduser("~")
-    debiru = os.path.join(user_home, "Downloads", k_k + '.png')
+    debiru = os.path.join(user_home, "Downloads", k_k + '.jpg')
     
     # 保存時はRGBAからRGBに戻す（互換性のため）
     newImage.convert("RGB").save(debiru)
