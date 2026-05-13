@@ -153,9 +153,7 @@ document.querySelector("#process_btn").addEventListener("click", create_proxy(ru
 document.querySelector("#color_picker").addEventListener("input", create_proxy(set_color))
 document.querySelector("#reset_color").addEventListener("click", create_proxy(reset_color))
 for el in document.querySelectorAll("input[name='file_format']"):
-    el.addEventListener("change", create_proxy(run_process))
-document.querySelector("#file_upload").addEventListener("change", create_proxy(run_process))
-
+    el.addEventListener("change", create_proxy(update_preview))
 </script>
 
 </body>
