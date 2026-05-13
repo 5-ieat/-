@@ -163,6 +163,46 @@ proxy_auto = create_proxy(update_preview_and_save)
 document.querySelector("#process_btn").addEventListener("click", create_proxy(run_process))
 document.querySelector("#color_picker").addEventListener("input", create_proxy(set_color))
 document.querySelector("#reset_color").addEventListener("click", create_proxy(reset_color))
+async def update_preview(event):
+    """ボタンを押さずにプレビューを更新する関数"""
+    await run_process(event)
+
+proxy_update = create_proxy(update_preview)
+document.querySelector("#file_upload").addEventListener("change", proxy_update)
+document.querySelector("#mosaic_scale").addEventListener("input", proxy_update)
+document.querySelector("#dark_mode").addEventListener("change", proxy_update)
+document.querySelector("#sirokuro_mode").addEventListener("change", proxy_update)
+for el in document.querySelectorAll("input[name='file_format']"):
+    el.addEventListener("change", proxy_update)
+
+def update_color_picker_style():
+    style_target = document.querySelector("#color_picker")
+    if selected_rgb is None:
+        # 透明に赤い斜線を入れる背景デザイン
+        style_target.style.background = "linear-gradient(45deg, rgba(255,255,255,1) 45%, rgba(255,0,0,1) 50%, rgba(255,255,255,1) 55%)"
+        style_target.style.backgroundSize = "cover"
+    else:
+        style_target.style.background = "none"
+
+
+_original_set_color = set_color
+def set_color_with_update(event):
+    _original_set_color(event)
+    update_color_picker_style()
+    import asyncio
+    asyncio.create_task(run_process(event))
+
+_original_reset_color = reset_color
+def reset_color_with_update(event):
+    _original_reset_color(event)
+    update_color_picker_style()
+    import asyncio
+    asyncio.create_task(run_process(event))
+
+document.querySelector("#color_picker").addEventListener("input", create_proxy(set_color_with_update))
+document.querySelector("#reset_color").onclick = create_proxy(reset_color_with_update)
+
+update_color_picker_style()
 document.querySelector("#file_upload").addEventListener("change", proxy_auto)
 document.querySelector("#mosaic_scale").addEventListener("input", proxy_auto)
 document.querySelector("#dark_mode").addEventListener("change", proxy_auto)
