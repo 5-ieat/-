@@ -7,35 +7,70 @@
     <script type="module" src="https://pyscript.net/releases/2024.1.1/core.js"></script>
     <style>
         body { font-family: sans-serif; text-align: center; background: #f0f0f0; padding: 20px; }
-        .controls { background: white; padding: 15px; border-radius: 10px; display: inline-block; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
+        
+        /* 1. 縦並びの調整 */
+        .controls { 
+            background: white; padding: 20px; border-radius: 10px; 
+            display: inline-flex; flex-direction: column; align-items: flex-start; gap: 15px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1); text-align: left;
+        }
+
+        .row { display: flex; align-items: center; gap: 10px; width: 100%; }
+
+        /* 2. 斜め線の透明背景（初期化時用） */
+        .color-input-container {
+            width: 50px; height: 30px; border: 1px solid #ccc; position: relative;
+            background: 
+                linear-gradient(45deg, transparent 48%, #ff0000 49%, #ff0000 51%, transparent 52%),
+                linear-gradient(-45deg, transparent 48%, #ff0000 49%, #ff0000 51%, transparent 52%);
+            background-size: 10px 10px;
+        }
+        #color_picker { width: 100%; height: 100%; cursor: pointer; opacity: 0.8; }
+        
         .preview { margin-top: 20px; }
-        canvas { display: none; }
-        img { max-width: 80%; border: 1px solid #ccc; }
+        img { max-width: 80%; border: 1px solid #ccc; background: white; }
     </style>
 </head>
 <body>
 
 <div class="controls">
     <h3>画像変換サイト</h3>
-    <input type="file" id="file_upload" accept="image/*"><br><br>
     
-    <label>モザイク度 (0-7): </label>
-    <input type="range" id="mosaic_scale" min="0" max="7" value="0"><br>
+    <div class="row">
+        <label>画像を選択:</label>
+        <input type="file" id="file_upload" accept="image/*">
+    </div>
     
-    <input type="checkbox" id="dark_mode"> ダークモード
+    <div class="row">
+        <label>モザイク:</label>
+        <input type="range" id="mosaic_scale" min="0" max="7" value="0">
+    </div>
     
-    <input type="checkbox" id="sirokuro_mode"> 白黒モード<br><br>
+    <div class="row">
+        <input type="checkbox" id="dark_mode"> ダークモード
+    </div>
+    <div class="row">
+        <input type="checkbox" id="sirokuro_mode"> 白黒モード
+    </div>
     
-    <label>かぶせる色: </label>
-    <input type="color" id="color_picker" value="#ff0000">
-    <button id="reset_color">色を初期化</button><br><br>
+    <div class="row">
+        <label>かぶせる色:</label>
+        <div class="color-input-container">
+            <input type="color" id="color_picker" value="#ffffff">
+        </div>
+        <button id="reset_color">透明に戻す</button>
+    </div>
     
-    <input type="text" id="file_name" placeholder="保存ファイル名" value="new_image"><br><br>
-    <button id="process_btn" style="padding: 10px 20px; background: #007bff; color: white; border: none; border-radius: 5px;">変換して保存</button>
+    <div class="row">
+        <input type="text" id="file_name" placeholder="保存ファイル名" value="new_image">
+    </div>
+
+    <!-- プレビューのみならボタン不要ですが、保存用に残しておきます -->
+    <button id="download_btn" style="padding: 10px 20px; background: #28a745; color: white; border: none; border-radius: 5px; cursor: pointer;">画像を保存</button>
 </div>
 
 <div class="preview">
-    <p>プレビュー：</p>
+    <p>自動プレビュー：</p>
     <img id="output_image" />
 </div>
 
@@ -52,20 +87,18 @@ from pyodide.ffi import create_proxy
 
 selected_rgb = None
 
-async def run_process(event):
+async def update_preview(event):
+    """変更があったら即座にプレビューを表示する"""
     global selected_rgb
     
     file_list = document.querySelector("#file_upload").files
     if len(file_list) == 0:
-        window.alert("ファイルを選択してください")
         return
 
     # 設定の取得
     mosaic_val = int(document.querySelector("#mosaic_scale").value)
     dark_mode = document.querySelector("#dark_mode").checked
     sirokuro_mode = document.querySelector("#sirokuro_mode").checked
-    hex_color = document.querySelector("#color_picker").value
-    file_name = document.querySelector("#file_name").value
 
     # 画像の読み込み
     file = file_list.item(0)
@@ -73,40 +106,42 @@ async def run_process(event):
     img = Image.open(io.BytesIO(array_buffer.to_bytes())).convert("RGBA")
     w, h = img.size
 
-    # 1. モザイク処理 (移植)
+    # モザイク処理
     if mosaic_val > 0:
         c = 2**(9 - (mosaic_val + 1))
-        f, g = int(w/(300/c)), int(h/(300/c))
-        if f > 0 and g > 0:
-            img = img.resize((f, g), resample=Image.NEAREST).resize((w, h), resample=Image.NEAREST)
+        f, g = max(1, int(w/(300/c))), max(1, int(h/(300/c)))
+        img = img.resize((f, g), resample=Image.NEAREST).resize((w, h), resample=Image.NEAREST)
 
-    # 2. 色をかぶせる (移植)
+    # 色をかぶせる
     if selected_rgb:
         alpha = 100
         color_layer = Image.new("RGBA", img.size, selected_rgb + (alpha,))
         img = Image.alpha_composite(img, color_layer)
 
-    # 3. ダークモード・白黒モード (移植)
+    # モード処理
     if dark_mode:
+        img = img.convert("L")
         if sirokuro_mode:
-            img = img.convert("L").convert("1")
-        else:
-            img = img.convert("L")
+            img = img.point(lambda x: 0 if x > 128 else 255, mode='1')
     elif sirokuro_mode:
         img = img.convert("1")
 
-    # 表示・ダウンロード処理
+    # プレビュー表示用の処理
     buffered = io.BytesIO()
-    save_img = img.convert("RGB")
-    save_img.save(buffered, format="PNG")
+    img.convert("RGBA").save(buffered, format="PNG")
     img_str = base64.b64encode(buffered.getvalue()).decode()
-    
-    # プレビュー表示
     document.querySelector("#output_image").src = f"data:image/png;base64,{img_str}"
-    
-    # ダウンロード実行
+
+async def download_image(event):
+    """保存ボタンが押された時だけダウンロードを実行"""
+    file_name = document.querySelector("#file_name").value
+    img_src = document.querySelector("#output_image").src
+    if not img_src:
+        window.alert("先に画像を選択してください")
+        return
+        
     link = document.createElement("a")
-    link.href = f"data:image/png;base64,{img_str}"
+    link.href = img_src
     link.download = f"{file_name}.png"
     link.click()
 
@@ -114,16 +149,26 @@ def set_color(event):
     global selected_rgb
     hex_val = event.target.value.lstrip('#')
     selected_rgb = tuple(int(hex_val[i:i+2], 16) for i in (0, 2, 4))
+    # 色を変えたらプレビュー更新
+    document.querySelector("#color_picker").style.opacity = "1.0"
+    create_proxy(update_preview)(None)
 
 def reset_color(event):
     global selected_rgb
     selected_rgb = None
-    window.alert("色をリセットしました")
+    document.querySelector("#color_picker").style.opacity = "0"
+    create_proxy(update_preview)(None)
 
-# イベント登録
-document.querySelector("#process_btn").addEventListener("click", create_proxy(run_process))
+# 自動更新用のイベント登録（ファイル選択、スライダー、チェックボックス）
+document.querySelector("#file_upload").addEventListener("change", create_proxy(update_preview))
+document.querySelector("#mosaic_scale").addEventListener("input", create_proxy(update_preview))
+document.querySelector("#dark_mode").addEventListener("change", create_proxy(update_preview))
+document.querySelector("#sirokuro_mode").addEventListener("change", create_proxy(update_preview))
+
+# カラーピッカーと保存ボタン
 document.querySelector("#color_picker").addEventListener("input", create_proxy(set_color))
 document.querySelector("#reset_color").addEventListener("click", create_proxy(reset_color))
+document.querySelector("#download_btn").addEventListener("click", create_proxy(download_image))
 </script>
 
 </body>
