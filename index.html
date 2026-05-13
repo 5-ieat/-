@@ -1,3 +1,51 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <title>画像変換サイト</title>
+    <link rel="stylesheet" href="https://pyscript.net/releases/2024.1.1/core.css" />
+    <script type="module" src="https://pyscript.net/releases/2024.1.1/core.js"></script>
+    <style>
+        body { font-family: sans-serif; text-align: center; background: #f0f0f0; padding: 20px; }
+        .controls { background: white; padding: 15px; border-radius: 10px; display: inline-block; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
+        .preview { margin-top: 20px; }
+        canvas { display: none; }
+        img { max-width: 80%; border: 1px solid #ccc; }
+    </style>
+</head>
+<body>
+
+<div class="controls">
+    <h3>画像変換サイト</h3>
+    <input type="file" id="file_upload" accept="image/*"><br><br>
+    
+    <label>モザイク度 (0-7): </label>
+    <input type="range" id="mosaic_scale" min="0" max="7" value="0"><br>
+    
+    <input type="checkbox" id="dark_mode"> ダークモード
+    <input type="checkbox" id="sirokuro_mode"> 白黒モード<br><br>
+    
+    <label>かぶせる色: </label>
+    <input type="color" id="color_picker" value="#ff0000">
+    <button id="reset_color">色を初期化</button><br><br>
+
+    <label>保存形式:</label>
+    <input type="radio" name="file_format" value="PNG" checked> PNG
+    <input type="radio" name="file_format" value="JPEG"> JPG
+    
+    <input type="text" id="file_name" placeholder="保存ファイル名" value="new_image"><br><br>
+    <button id="process_btn" style="padding: 10px 20px; background: #007bff; color: white; border: none; border-radius: 5px;">変換して保存</button>
+</div>
+
+<div class="preview">
+    <p>プレビュー：</p>
+    <img id="output_image" />
+</div>
+
+<py-config>
+    packages = ["Pillow"]
+</py-config>
+
 <script type="py">
 import io
 import base64
@@ -132,3 +180,6 @@ document.querySelector("#process_btn").onclick = proxy_auto
 # 初期スタイル適用
 update_color_picker_style()
 </script>
+
+</body>
+</html>
