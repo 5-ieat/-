@@ -160,6 +160,9 @@ async def update_preview_and_save(event):
 proxy_auto = create_proxy(update_preview_and_save)
 
 #イベント
+document.querySelector("#process_btn").addEventListener("click", create_proxy(run_process))
+document.querySelector("#color_picker").addEventListener("input", create_proxy(set_color))
+document.querySelector("#reset_color").addEventListener("click", create_proxy(reset_color))
 document.querySelector("#file_upload").addEventListener("change", proxy_auto)
 document.querySelector("#mosaic_scale").addEventListener("input", proxy_auto)
 document.querySelector("#dark_mode").addEventListener("change", proxy_auto)
