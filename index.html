@@ -23,12 +23,15 @@
     <input type="range" id="mosaic_scale" min="0" max="7" value="0"><br>
     
     <input type="checkbox" id="dark_mode"> ダークモード
-    
     <input type="checkbox" id="sirokuro_mode"> 白黒モード<br><br>
     
     <label>かぶせる色: </label>
     <input type="color" id="color_picker" value="#ff0000">
     <button id="reset_color">色を初期化</button><br><br>
+
+    <label>保存形式:</label>
+    <input type="radio" name="file_format" value="PNG" checked> PNG
+    <input type="radio" name="file_format" value="JPEG"> JPG
     
     <input type="text" id="file_name" placeholder="保存ファイル名" value="new_image"><br><br>
     <button id="process_btn" style="padding: 10px 20px; background: #007bff; color: white; border: none; border-radius: 5px;">変換して保存</button>
@@ -95,19 +98,44 @@ async def run_process(event):
     elif sirokuro_mode:
         img = img.convert("1")
 
-    # 表示・ダウンロード処理
+    # 1. 保存形式（PNGかJPEGか）を取得
+    format_elements = document.querySelectorAll("input[name='file_format']")
+    selected_format = "PNG"
+    for el in format_elements:
+        if el.checked:
+            selected_format = el.value
+
+    # 2. 画像の書き出し準備
     buffered = io.BytesIO()
-    save_img = img.convert("RGB")
-    save_img.save(buffered, format="PNG")
+    
+    if selected_format == "JPEG":
+        # JPEGは透明を扱えないため、白い背景の上に画像を重ねる
+        rgb_img = Image.new("RGB", img.size, (255, 255, 255))
+        # imgがRGBAなら、アルファチャンネル（3番目のインデックス）をマスクに使う
+        rgb_img.paste(img, mask=img.split()[3] if img.mode == 'RGBA' else None)
+        rgb_img.save(buffered, format="JPEG", quality=90)
+        mime_type = "image/jpeg"
+    else:
+        # PNGとして保存
+        img.save(buffered, format="PNG")
+        mime_type = "image/png"
+
+    # 3. プレビューの更新
     img_str = base64.b64encode(buffered.getvalue()).decode()
+    document.querySelector("#output_image").src = f"data:{mime_type};base64,{img_str}"
+
+# 保存ボタンの処理も拡張子を合わせる
+async def download_image(event):
+    file_name = document.querySelector("#file_name").value
+    img_src = document.querySelector("#output_image").src
+    if not img_src: return
+        
+    # URLの中に jpeg という文字が入っていれば .jpg にする
+    ext = ".jpg" if "image/jpeg" in img_src else ".png"
     
-    # プレビュー表示
-    document.querySelector("#output_image").src = f"data:image/png;base64,{img_str}"
-    
-    # ダウンロード実行
     link = document.createElement("a")
-    link.href = f"data:image/png;base64,{img_str}"
-    link.download = f"{file_name}.png"
+    link.href = img_src
+    link.download = f"{file_name}{ext}"
     link.click()
 
 def set_color(event):
@@ -120,10 +148,25 @@ def reset_color(event):
     selected_rgb = None
     window.alert("色をリセットしました")
 
-# イベント登録
-document.querySelector("#process_btn").addEventListener("click", create_proxy(run_process))
-document.querySelector("#color_picker").addEventListener("input", create_proxy(set_color))
-document.querySelector("#reset_color").addEventListener("click", create_proxy(reset_color))
+async def update_preview(event):
+    # すでに定義されている run_process を呼び出すだけでOK
+    await run_process(event)
+async def update_preview_and_save(event):
+    # 1. プレビューを更新
+    await run_process(event)
+    # 2. そのまま保存処理を実行
+    await download_image(event)
+
+proxy_auto = create_proxy(update_preview_and_save)
+
+#イベント
+document.querySelector("#file_upload").addEventListener("change", proxy_auto)
+document.querySelector("#mosaic_scale").addEventListener("input", proxy_auto)
+document.querySelector("#dark_mode").addEventListener("change", proxy_auto)
+document.querySelector("#sirokuro_mode").addEventListener("change", proxy_auto)
+for el in document.querySelectorAll("input[name='file_format']"):
+    el.addEventListener("change", proxy_auto)
+document.querySelector("#color_picker").addEventListener("change", proxy_auto)
 </script>
 
 </body>
