@@ -155,6 +155,7 @@ document.querySelector("#reset_color").addEventListener("click", create_proxy(re
 for el in document.querySelectorAll("input[name='file_format']"):
     el.addEventListener("change", create_proxy(run_process))
 document.querySelector("#file_upload").addEventListener("change", create_proxy(run_process))
+document.querySelector("#mosaic_scale").addEventListener("input", create_proxy(run_process))
 </script>
 
 </body>
