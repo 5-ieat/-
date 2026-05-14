@@ -103,7 +103,6 @@ async def run_process(event=None):
     if selected_format == "JPEG":
         rgb_img = Image.new("RGB", img.size, (255, 255, 255))
         rgb_img.paste(img, mask=img.split()[3] if img.mode == 'RGBA' else None)
-        rgb_img.save(buffered, format="JPEG", quality=90)
         mime_type = "image/jpeg"
     else:
         img.save(buffered, format="PNG")
