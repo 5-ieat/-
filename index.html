@@ -102,7 +102,8 @@ async def run_process(event=None):
     buffered = io.BytesIO()
     if selected_format == "JPEG":
         rgb_img = Image.new("RGB", img.size, (255, 255, 255))
-        rgb_img.paste(img, mask=img.split()[3] if img.mode == 'RGBA' else None)
+        mask = img.split()[3] if img.mode == 'RGBA' else None
+        rgb_img.paste(img, mask=mask)
         rgb_img.save(buffered, format="JPEG", quality=90)
         mime_type = "image/jpeg"
     else:
@@ -111,58 +112,61 @@ async def run_process(event=None):
 
     # プレビューの更新
     img_str = base64.b64encode(buffered.getvalue()).decode()
-    src_data = f"data:{mime_type};base64,{img_str}"
-    document.querySelector("#output_image").src = src_data
-    return src_data
+    document.querySelector("#output_image").src = f"data:{mime_type};base64,{img_str}"
 
-async def download_image(event=None):
+# --- 2. 保存（ダウンロード）のみ行う ---
+def download_current_image(event=None):
+    img_src = document.querySelector("#output_image").src
+    if not img_src or img_src == "" or img_src.endswith("alt="):
+        window.alert("先に画像をアップロードしてください")
+        return
+    
+    file_name = document.querySelector("#file_name").value
+    ext = ".jpg" if "image/jpeg" in img_src else ".png"
+    
+    link = document.createElement("a")
+    link.href = img_src
+    link.download = f"{file_name}{ext}"
+    link.click()
 
+# --- 3. 補助関数 ---
 def update_color_picker_style():
-    """色が初期状態のときに斜線を入れる"""
     style_target = document.querySelector("#color_picker")
     if selected_rgb is None:
         style_target.style.background = "linear-gradient(45deg, #fff 45%, #ff0000 50%, #fff 55%)"
-        style_target.style.border = "1px solid #ccc"
     else:
         style_target.style.background = "none"
-
-async def auto_update_and_save(event):
-    """自動でプレビューして保存する"""
-    await run_process(event)
-    await download_image(event)
 
 def set_color(event):
     global selected_rgb
     hex_val = event.target.value.lstrip('#')
     selected_rgb = tuple(int(hex_val[i:i+2], 16) for i in (0, 2, 4))
     update_color_picker_style()
-    asyncio.create_task(auto_update_and_save(event))
+    asyncio.create_task(update_preview(event))
 
 def reset_color(event):
     global selected_rgb
     selected_rgb = None
     update_color_picker_style()
-    asyncio.create_task(auto_update_and_save(event))
+    asyncio.create_task(update_preview(event))
 
-# --- イベント登録 ---
-proxy_auto = create_proxy(auto_update_and_save)
+# --- 4. イベント登録 ---
+proxy_preview = create_proxy(update_preview)
 
-# 入力項目への登録
-document.querySelector("#file_upload").addEventListener("change", proxy_auto)
-document.querySelector("#mosaic_scale").addEventListener("input", proxy_auto)
-document.querySelector("#dark_mode").addEventListener("change", proxy_auto)
-document.querySelector("#sirokuro_mode").addEventListener("change", proxy_auto)
+# プレビューを更新する要素（保存はしない）
+document.querySelector("#file_upload").addEventListener("change", proxy_preview)
+document.querySelector("#mosaic_scale").addEventListener("input", proxy_preview)
+document.querySelector("#dark_mode").addEventListener("change", proxy_preview)
+document.querySelector("#sirokuro_mode").addEventListener("change", proxy_preview)
 for el in document.querySelectorAll("input[name='file_format']"):
-    el.addEventListener("change", proxy_auto)
+    el.addEventListener("change", proxy_preview)
 
-# 色関連
 document.querySelector("#color_picker").addEventListener("input", create_proxy(set_color))
 document.querySelector("#reset_color").onclick = create_proxy(reset_color)
 
-# 保存ボタン（手動）
-document.querySelector("#process_btn").onclick = proxy_auto
+# 「変換して保存」ボタン（プレビューは変えず、今の画像を保存するだけ）
+document.querySelector("#process_btn").onclick = create_proxy(download_current_image)
 
-# 初期スタイル適用
 update_color_picker_style()
 </script>
 
