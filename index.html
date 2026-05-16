@@ -143,20 +143,20 @@ def update_color_picker_style():
     if selected_rgb is None:
         style_target.style.background = "linear-gradient(45deg, #fff 45%, #ff0000 50%, #fff 55%)"
     else:
-        style_target.style.background = "none"
+        style_target.style.background = f"rgb({selected_rgb[0]},{selected_rgb[1]},{selected_rgb[2]})
 
 def set_color(event):
     global selected_rgb
     hex_val = event.target.value.lstrip('#')
     selected_rgb = tuple(int(hex_val[i:i+2], 16) for i in (0, 2, 4))
     update_color_picker_style()
-    asyncio.create_task(update_preview(event)) # 💡 ここも update_preview に統一
+    asyncio.create_task(update_preview(event))
 
 def reset_color(event):
     global selected_rgb
     selected_rgb = None
     update_color_picker_style()
-    asyncio.create_task(update_preview(event)) # 💡 ここも update_preview に統一
+    asyncio.create_task(update_preview(event)) 
 
 # --- 4. イベント登録 ---
 proxy_preview = create_proxy(update_preview)
