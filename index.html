@@ -51,7 +51,7 @@ from pyodide.ffi import create_proxy
 
 selected_rgb = None
 
-async def run_process(event=None):
+async def update_preview(event=None):
     global selected_rgb
     
     file_list = document.querySelector("#file_upload").files
@@ -151,7 +151,7 @@ def reset_color(event):
     asyncio.create_task(update_preview(event))
 
 # --- 4. イベント登録 ---
-proxy_preview = create_proxy(update_preview)
+proxy_preview = create_proxy(run_process)
 
 # プレビューを更新する要素（保存はしない）
 document.querySelector("#file_upload").addEventListener("change", proxy_preview)
