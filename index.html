@@ -10,7 +10,7 @@
         .controls { background: white; padding: 15px; border-radius: 10px; display: inline-block; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
         .preview { margin-top: 20px; }
         canvas { display: none; }
-        img { max-width: 80%; border: 1px solid #ccc; }
+        img { max-width: 80%; border: 1px solid #ccc; margin-top: 15px; }
     </style>
 </head>
 <body>
@@ -37,6 +37,11 @@
     <button id="process_btn" style="padding: 10px 20px; background: #007bff; color: white; border: none; border-radius: 5px;">変換して保存</button>
 </div>
 
+<!-- 💡 画像を表示するためのプレビューエリアを追加しました -->
+<div class="preview">
+    <img id="output_image" style="display: none;">
+</div>
+
 <py-config>
     packages = ["Pillow"]
 </py-config>
@@ -51,6 +56,7 @@ from pyodide.ffi import create_proxy
 
 selected_rgb = None
 
+# 💡 関数名を「update_preview」に統一しました
 async def update_preview(event=None):
     global selected_rgb
     
@@ -112,12 +118,14 @@ async def update_preview(event=None):
 
     # プレビューの更新
     img_str = base64.b64encode(buffered.getvalue()).decode()
-    document.querySelector("#output_image").src = f"data:{mime_type};base64,{img_str}"
+    output_img_element = document.querySelector("#output_image")
+    output_img_element.src = f"data:{mime_type};base64,{img_str}"
+    output_img_element.style.display = "inline-block" # 画像が読み込まれたら表示する
 
 # --- 2. 保存（ダウンロード）のみ行う ---
 def download_current_image(event=None):
     img_src = document.querySelector("#output_image").src
-    if not img_src or img_src == "" or img_src.endswith("alt="):
+    if not img_src or img_src == "":
         window.alert("先に画像をアップロードしてください")
         return
     
@@ -142,18 +150,18 @@ def set_color(event):
     hex_val = event.target.value.lstrip('#')
     selected_rgb = tuple(int(hex_val[i:i+2], 16) for i in (0, 2, 4))
     update_color_picker_style()
-    asyncio.create_task(update_preview(event))
+    asyncio.create_task(update_preview(event)) # 💡 ここも update_preview に統一
 
 def reset_color(event):
     global selected_rgb
     selected_rgb = None
     update_color_picker_style()
-    asyncio.create_task(update_preview(event))
+    asyncio.create_task(update_preview(event)) # 💡 ここも update_preview に統一
 
 # --- 4. イベント登録 ---
-proxy_preview = create_proxy(run_process)
+proxy_preview = create_proxy(update_preview)
 
-# プレビューを更新する要素（保存はしない）
+# プレビューを更新する要素
 document.querySelector("#file_upload").addEventListener("change", proxy_preview)
 document.querySelector("#mosaic_scale").addEventListener("input", proxy_preview)
 document.querySelector("#dark_mode").addEventListener("change", proxy_preview)
@@ -164,7 +172,7 @@ for el in document.querySelectorAll("input[name='file_format']"):
 document.querySelector("#color_picker").addEventListener("input", create_proxy(set_color))
 document.querySelector("#reset_color").onclick = create_proxy(reset_color)
 
-# 「変換して保存」ボタン（プレビューは変えず、今の画像を保存するだけ）
+# 「変換して保存」ボタン（今のプレビュー画像を保存する）
 document.querySelector("#process_btn").onclick = create_proxy(download_current_image)
 
 update_color_picker_style()
