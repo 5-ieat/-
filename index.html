@@ -185,27 +185,27 @@ update_color_picker_style()
     <meta charset="UTF-8">
     <title>ダウンロードページ</title>
     <style>
-        /* 見た目を「ボタン」にするための簡単なデザイン */
-        .download-button {
-            width: fit-content;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            gap: 20px;
-            padding: 12px 24px;
-            background-color: #007bff; /* ボタンの背景色（青） */
-            color: #ffffff;            /* 文字の色（白） */
-            text-decoration: none;     /* 下線を消す */
-            border-radius: 4px;        /* 角を少し丸くする */
-            font-weight: bold;
-            font-size: 16px;
-            transition: background-color 0.2s;
-        }
-        /* マウスを乗せたときに少し暗くする効果 */
-        .download-button:hover {
-            background-color: #0056b3;
-        }
-    </style>
+    /* 親要素（外側の箱）の設定 */
+    .center-box {
+        display: flex;           /* Flexboxを有効にする */
+        justify-content: center; /* 左右の中央に寄せる */
+
+        /* もし上下（垂直方向）も真ん中にしたい場合は、以下も追加します */
+        /* align-items: center; */
+        /* height: 100vh; （画面全体の高さに合わせる場合） */
+    }
+
+/* ボタン自体のデザイン */
+    .download-button {
+        display: inline-block;
+        padding: 12px 24px;
+        background-color: #007bff;
+        color: #ffffff;
+        text-decoration: none;
+        border-radius: 4px;
+        font-weight: bold;
+    }
+</style>
 </head>
 <body>
 
