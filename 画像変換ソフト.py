@@ -1,4 +1,5 @@
 import os
+import sys
 import webbrowser
 import customtkinter as ctk
 from tkinter import colorchooser  # 💡 色選択ダイアログを使うために追加
@@ -8,11 +9,20 @@ from PIL import Image, ImageOps
 ctk.set_appearance_mode("System")
 ctk.set_default_color_theme("blue")
 
+def get_resource_path(relative_path):
+    """ PyInstallerの一時フォルダ、または通常の実行フォルダから絶対パスを取得する """
+    if hasattr(sys, '_MEIPASS'):
+        return os.path.join(sys._MEIPASS, relative_path)
+    return os.path.join(os.path.abspath("."), relative_path)
+
 class ImageConverterApp(ctk.CTk):
     def __init__(self):
         super().__init__()
         self.title("画像変換アプリ")
         self.geometry("500x780")
+        ico_path = get_resource_path("ga.ico")
+        self.iconbitmap(ico_path)
+
 
         # 状態保持用変数
         self.original_img = None
@@ -23,7 +33,7 @@ class ImageConverterApp(ctk.CTk):
         self.main_frame = ctk.CTkScrollableFrame(self, width=460, height=740)
         self.main_frame.pack(pady=10, padx=10, fill="both", expand=True)
 
-        ctk.CTkLabel(self.main_frame, text="画像変換サイト (Python版)", font=("Arial", 20, "bold")).pack(pady=10)
+        ctk.CTkLabel(self.main_frame, text="画像変換アプリ", font=("Arial", 20, "bold")).pack(pady=10)
 
         # ファイル選択
         self.btn_upload = ctk.CTkButton(self.main_frame, text="画像を選択", command=self.load_image)
@@ -107,7 +117,6 @@ class ImageConverterApp(ctk.CTk):
         if self.original_img:
             self.update_preview()
 
-    # 💡 いろはさんが提示してくれたカラーピッカーの処理
     def choose_color(self):
         # OS標準のカラーピッカーを開く
         color = colorchooser.askcolor(title="色を選択する")
