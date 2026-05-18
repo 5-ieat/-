@@ -104,13 +104,6 @@
 </head>
 <body>
 
-    <!-- 1. .exeファイル ダウンロードエリア -->
-    <div class="center-box">
-        <a href="https://github.com/5-ieat/gazouhenkan/raw/main/%E7%94%BB%E5%83%8F%E5%A4%89%E6%8F%9B%E3%82%BD%E3%83%95%E3%83%88.exe" class="download-button" download>
-            画像変換ソフト.exeをダウンロード 
-        </a>
-    </div>
-
     <!-- 2. 画像変換メインエリア -->
     <div class="controls">
         <h3>画像変換サイト</h3>
@@ -140,7 +133,14 @@
         <img id="output_image" style="display: none;">
     </div>
 
-    <!-- 4. Google検索エリア -->
+    <!-- 4. .exeファイル ダウンロードエリア -->
+    <div class="center-box">
+        <a href="https://github.com/5-ieat/gazouhenkan/raw/main/%E7%94%BB%E5%83%8F%E5%A4%89%E6%8F%9B%E3%82%BD%E3%83%95%E3%83%88.exe" class="download-button" download>
+            画像変換ソフト.exeをダウンロード 
+        </a>
+    </div>
+
+    <!-- 5. Google検索エリア -->
     <div class="search-box">
         <form action="https://www.google.com/search" method="get" target="_blank">
             <label for="google_search" style="display: block; margin-bottom: 10px; font-weight: bold;">加工する画像を調べるにはこちら：</label>
@@ -150,7 +150,7 @@
         </form>
     </div>
 
-    <!-- 5. Pythonスクリプト処理（設定と処理内容はそのまま維持しています） -->
+    <!-- 6. Pythonスクリプト処理（設定と処理内容はそのまま維持しています） -->
     <py-config>
         packages = ["Pillow"]
     </py-config>
