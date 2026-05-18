@@ -181,6 +181,38 @@ document.querySelector("#process_btn").onclick = create_proxy(download_current_i
 update_color_picker_style()
 </script>
 
+<div>
+    <button type="submit" style="padding: 5px 10px; background: #28a745; color: white; border: none; border-radius: 3px; cursor: pointer;">Googleで検索</button>
+</div>
+
+<head>
+    <meta charset="UTF-8">
+    <title>ダウンロードページ</title>
+    <style>
+        /* 見た目を「ボタン」にするための簡単なデザイン */
+        .download-button {
+            display: inline-block;
+            padding: 12px 24px;
+            background-color: #007bff; /* ボタンの背景色（青） */
+            color: #ffffff;            /* 文字の色（白） */
+            text-decoration: none;     /* 下線を消す */
+            border-radius: 4px;        /* 角を少し丸くする */
+            font-weight: bold;
+            font-size: 16px;
+            transition: background-color 0.2s;
+        }
+        /* マウスを乗せたときに少し暗くする効果 */
+        .download-button:hover {
+            background-color: #0056b3;
+        }
+    </style>
+</head>
+<body>
+
+    <a href="https://github.com/5-ieat/gazouhenkan/raw/main/%E7%94%BB%E5%83%8F%E5%A4%89%E6%8F%9B%E3%82%BD%E3%83%95%E3%83%88.exe" class="download-button" download>
+        画像変換ソフトをダウンロード (.exe)
+    </a>
+
 <div style="margin-top: 30px; background: white; padding: 15px; border-radius: 10px; display: inline-block; box-shadow: 0 2px 5px rgba(0,0,0,0.1);">
     <form action="https://www.google.com/search" method="get" target="_blank">
         <label for="google_search">加工する画像を調べるにはこちら：</label>
