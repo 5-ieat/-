@@ -2,227 +2,274 @@
 <html lang="ja">
 <head>
     <meta charset="UTF-8">
+    <!-- スマホ対応のための必須設定 -->
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>画像変換サイト</title>
+    
+    <!-- 外部ライブラリ（PyScript） -->
     <link rel="stylesheet" href="https://pyscript.net/releases/2024.1.1/core.css" />
     <script type="module" src="https://pyscript.net/releases/2024.1.1/core.js"></script>
+    
     <style>
-        body { font-family: sans-serif; text-align: center; background: #f0f0f0; padding: 20px; }
-        .controls { background: white; padding: 15px; border-radius: 10px; display: inline-block; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
+        /* === パソコン・スマホ共通のベースデザイン === */
+        body { 
+            font-family: sans-serif; 
+            text-align: center; 
+            background: #f0f0f0; 
+            padding: 20px; 
+            margin: 0;
+        }
+        
+        /* 各ブロックを囲む共通の箱 */
+        .controls, .search-box { 
+            background: white; 
+            padding: 15px; 
+            border-radius: 10px; 
+            display: inline-block; 
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1); 
+            box-sizing: border-box;
+            width: 100%;
+            max-width: 500px; /* パソコンで広がりすぎないように制限 */
+            margin-bottom: 20px;
+        }
+        
         .preview { margin-top: 20px; }
         canvas { display: none; }
         img { max-width: 80%; border: 1px solid #ccc; margin-top: 15px; }
-        #color_picker{-webkit-appearance: none;appearance: none;border: 1px solid #ccc;width: 50px;height: 30px;cursor: pointer;background-color: #fff;}
-        #color_picker::-webkit-color-swatch {background-color: transparent !important;border: none;}
-        #color_picker::-moz-color-swatch {background-color: transparent !important;border: none;}
-</style>
+        
+        /* カラーピッカーのデザイン */
+        #color_picker {
+            -webkit-appearance: none;
+            appearance: none;
+            border: 1px solid #ccc;
+            width: 50px;
+            height: 30px;
+            cursor: pointer;
+            background-color: #fff;
+            vertical-align: middle;
+        }
+        #color_picker::-webkit-color-swatch { background-color: transparent !important; border: none; }
+        #color_picker::-moz-color-swatch { background-color: transparent !important; border: none; }
+
+        /* 外側のダウンロードボタンエリア */
+        .center-box {
+            display: flex;           
+            justify-content: center; 
+            margin-bottom: 20px;
+        }
+
+        /* ダウンロードボタン自体のデザイン */
+        .download-button {
+            display: inline-block;
+            padding: 12px 24px;
+            background-color: #007bff;
+            color: #ffffff;
+            text-decoration: none;
+            border-radius: 4px;
+            font-weight: bold;
+            transition: background-color 0.2s;
+        }
+        .download-button:hover {
+            background-color: #0056b3;
+        }
+
+        /* === 【新設】スマホ用の切り替え設定（画面幅768px以下） === */
+        @media screen and (max-width: 768px) {
+            body {
+                padding: 10px; /* スマホは画面いっぱいに使うため余白を狭く */
+            }
+            .controls, .search-box {
+                max-width: 100%; /* 横幅いっぱいにする */
+                padding: 20px 15px;
+            }
+            /* 入力欄やボタンをスマホで押しやすく大きくする */
+            input[type="text"], button, #process_btn {
+                width: 100%;
+                box-sizing: border-box;
+                padding: 12px !important; /* 押しやすい高さに */
+                margin-top: 5px;
+                margin-bottom: 5px;
+            }
+            /* ダウンロードボタンもスマホ画面にフィットさせる */
+            .download-button {
+                width: 100%;
+                max-width: 100%;
+                text-align: center;
+            }
+            .center-box {
+                padding: 0 10px;
+            }
+        }
+    </style>
 </head>
 <body>
 
-<div class="controls">
-    <h3>画像変換サイト</h3>
-    <input type="file" id="file_upload" accept="image/*"><br><br>
-    
-    <label>モザイク度 (0-7): </label>
-    <input type="range" id="mosaic_scale" min="0" max="7" value="0"><br>
-    
-    <input type="checkbox" id="dark_mode"> ダークモード
-    <input type="checkbox" id="sirokuro_mode"> 白黒モード<br><br>
-    
-    <label>かぶせる色: </label>
-    <input type="color" id="color_picker" value="#ff0000">
-    <button id="reset_color">色を初期化</button><br><br>
+    <!-- 1. .exeファイル ダウンロードエリア -->
+    <div class="center-box">
+        <a href="https://github.com/5-ieat/gazouhenkan/raw/main/%E7%94%BB%E5%83%8F%E5%A4%89%E6%8F%9B%E3%82%BD%E3%83%95%E3%83%88.exe" class="download-button" download>
+            画像変換ソフト.exeをダウンロード 
+        </a>
+    </div>
 
-    <label>保存形式:</label>
-    <input type="radio" name="file_format" value="PNG" checked> PNG
-    <input type="radio" name="file_format" value="JPEG"> JPG
-    
-    <input type="text" id="file_name" placeholder="保存ファイル名" value="new_image"><br><br>
-    <button id="process_btn" style="padding: 10px 20px; background: #007bff; color: white; border: none; border-radius: 5px;">変換して保存</button>
-</div>
+    <!-- 2. 画像変換メインエリア -->
+    <div class="controls">
+        <h3>画像変換サイト</h3>
+        <input type="file" id="file_upload" accept="image/*"><br><br>
+        
+        <label>モザイク度 (0-7): </label>
+        <input type="range" id="mosaic_scale" min="0" max="7" value="0"><br>
+        
+        <input type="checkbox" id="dark_mode"> ダークモード
+        <input type="checkbox" id="sirokuro_mode"> 白黒モード<br><br>
+        
+        <label>かぶせる色: </label>
+        <input type="color" id="color_picker" value="#ff0000">
+        <button id="reset_color">色を初期化</button><br><br>
 
-<!-- 💡 画像を表示するためのプレビューエリアを追加しました -->
-<div class="preview">
-    <img id="output_image" style="display: none;">
-</div>
+        <label>保存形式:</label>
+        <input type="radio" name="file_format" value="PNG" checked> PNG
+        <input type="radio" name="file_format" value="JPEG"> JPG
+        <br><br>
+        
+        <input type="text" id="file_name" placeholder="保存ファイル名" value="new_image"><br><br>
+        <button id="process_btn" style="padding: 10px 20px; background: #007bff; color: white; border: none; border-radius: 5px; font-weight: bold; cursor: pointer;">変換して保存</button>
+    </div>
 
-<py-config>
-    packages = ["Pillow"]
-</py-config>
+    <!-- 3. 画像プレビューエリア -->
+    <div class="preview">
+        <img id="output_image" style="display: none;">
+    </div>
 
-<script type="py">
-import io
-import base64
-import asyncio
-from pyscript import document, window
-from PIL import Image
-from pyodide.ffi import create_proxy
+    <!-- 4. Google検索エリア -->
+    <div class="search-box">
+        <form action="https://www.google.com/search" method="get" target="_blank">
+            <label for="google_search" style="display: block; margin-bottom: 10px; font-weight: bold;">加工する画像を調べるにはこちら：</label>
+            <input type="text" id="google_search" name="q" placeholder="調べること" value="画像素材">
+            <input type="hidden" name="udm" value="2">
+            <button type="submit" style="padding: 8px 15px; background: #28a745; color: white; border: none; border-radius: 3px; cursor: pointer; font-weight: bold;">Googleで検索</button>
+        </form>
+    </div>
 
-selected_rgb = None
+    <!-- 5. Pythonスクリプト処理（設定と処理内容はそのまま維持しています） -->
+    <py-config>
+        packages = ["Pillow"]
+    </py-config>
 
-# 💡 関数名を「update_preview」に統一しました
-async def update_preview(event=None):
-    global selected_rgb
-    
-    file_list = document.querySelector("#file_upload").files
-    if len(file_list) == 0:
-        return
+    <script type="py">
+    import io
+    import base64
+    import asyncio
+    from pyscript import document, window
+    from PIL import Image
+    from pyodide.ffi import create_proxy
 
-    # 設定の取得
-    mosaic_val = int(document.querySelector("#mosaic_scale").value)
-    dark_mode = document.querySelector("#dark_mode").checked
-    sirokuro_mode = document.querySelector("#sirokuro_mode").checked
-
-    # 画像の読み込み
-    file = file_list.item(0)
-    array_buffer = await file.arrayBuffer()
-    img = Image.open(io.BytesIO(array_buffer.to_bytes())).convert("RGBA")
-    w, h = img.size
-
-    # 1. モザイク処理
-    if mosaic_val > 0:
-        c = 2**(9 - (mosaic_val + 1))
-        f, g = int(w/(300/c)), int(h/(300/c))
-        if f > 0 and g > 0:
-            img = img.resize((f, g), resample=Image.NEAREST).resize((w, h), resample=Image.NEAREST)
-
-    # 2. 色をかぶせる
-    if selected_rgb:
-        alpha = 100
-        color_layer = Image.new("RGBA", img.size, selected_rgb + (alpha,))
-        img = Image.alpha_composite(img, color_layer)
-
-    # 3. ダークモード・白黒モード
-    if dark_mode:
-        if sirokuro_mode:
-            img = img.convert("L").convert("1")
-        else:
-            img = img.convert("L")
-    elif sirokuro_mode:
-        img = img.convert("1")
-
-    # 保存形式の取得
-    format_elements = document.querySelectorAll("input[name='file_format']")
-    selected_format = "PNG"
-    for el in format_elements:
-        if el.checked:
-            selected_format = el.value
-
-    # 画像の書き出し準備
-    buffered = io.BytesIO()
-    if selected_format == "JPEG":
-        rgb_img = Image.new("RGB", img.size, (255, 255, 255))
-        mask = img.split()[3] if img.mode == 'RGBA' else None
-        rgb_img.paste(img, mask=mask)
-        rgb_img.save(buffered, format="JPEG", quality=90)
-        mime_type = "image/jpeg"
-    else:
-        img.save(buffered, format="PNG")
-        mime_type = "image/png"
-
-    # プレビューの更新
-    img_str = base64.b64encode(buffered.getvalue()).decode()
-    output_img_element = document.querySelector("#output_image")
-    output_img_element.src = f"data:{mime_type};base64,{img_str}"
-    output_img_element.style.display = "inline-block" # 画像が読み込まれたら表示する
-
-# --- 2. 保存（ダウンロード）のみ行う ---
-def download_current_image(event=None):
-    img_src = document.querySelector("#output_image").src
-    if not img_src or img_src == "":
-        window.alert("先に画像をアップロードしてください")
-        return
-    
-    file_name = document.querySelector("#file_name").value
-    ext = ".jpg" if "image/jpeg" in img_src else ".png"
-    
-    link = document.createElement("a")
-    link.href = img_src
-    link.download = f"{file_name}{ext}"
-    link.click()
-
-# --- 3. 補助関数 ---
-def update_color_picker_style():
-    style_target = document.querySelector("#color_picker")
-    if selected_rgb is None:
-        style_target.style.background = "linear-gradient(45deg, #fff 45%, #ff0000 50%, #fff 55%)"
-    else:
-        style_target.style.background = f"rgb({selected_rgb[0]},{selected_rgb[1]},{selected_rgb[2]})"
-
-def set_color(event):
-    global selected_rgb
-    hex_val = event.target.value.lstrip('#')
-    selected_rgb = tuple(int(hex_val[i:i+2], 16) for i in (0, 2, 4))
-    update_color_picker_style()
-    asyncio.create_task(update_preview(event))
-
-def reset_color(event):
-    global selected_rgb
     selected_rgb = None
+
+    async def update_preview(event=None):
+        global selected_rgb
+        
+        file_list = document.querySelector("#file_upload").files
+        if len(file_list) == 0:
+            return
+
+        mosaic_val = int(document.querySelector("#mosaic_scale").value)
+        dark_mode = document.querySelector("#dark_mode").checked
+        sirokuro_mode = document.querySelector("#sirokuro_mode").checked
+
+        file = file_list.item(0)
+        array_buffer = await file.arrayBuffer()
+        img = Image.open(io.BytesIO(array_buffer.to_bytes())).convert("RGBA")
+        w, h = img.size
+
+        if mosaic_val > 0:
+            c = 2**(9 - (mosaic_val + 1))
+            f, g = int(w/(300/c)), int(h/(300/c))
+            if f > 0 and g > 0:
+                img = img.resize((f, g), resample=Image.NEAREST).resize((w, h), resample=Image.NEAREST)
+
+        if selected_rgb:
+            alpha = 100
+            color_layer = Image.new("RGBA", img.size, selected_rgb + (alpha,))
+            img = Image.alpha_composite(img, color_layer)
+
+        if dark_mode:
+            if sirokuro_mode:
+                img = img.convert("L").convert("1")
+            else:
+                img = img.convert("L")
+        elif sirokuro_mode:
+            img = img.convert("1")
+
+        format_elements = document.querySelectorAll("input[name='file_format']")
+        selected_format = "PNG"
+        for el in format_elements:
+            if el.checked:
+                selected_format = el.value
+
+        buffered = io.BytesIO()
+        if selected_format == "JPEG":
+            rgb_img = Image.new("RGB", img.size, (255, 255, 255))
+            mask = img.split()[3] if img.mode == 'RGBA' else None
+            rgb_img.paste(img, mask=mask)
+            rgb_img.save(buffered, format="JPEG", quality=90)
+            mime_type = "image/jpeg"
+        else:
+            img.save(buffered, format="PNG")
+            mime_type = "image/png"
+
+        img_str = base64.b64encode(buffered.getvalue()).decode()
+        output_img_element = document.querySelector("#output_image")
+        output_img_element.src = f"data:{mime_type};base64,{img_str}"
+        output_img_element.style.display = "inline-block"
+
+    def download_current_image(event=None):
+        img_src = document.querySelector("#output_image").src
+        if not img_src or img_src == "":
+            window.alert("先に画像をアップロードしてください")
+            return
+        
+        file_name = document.querySelector("#file_name").value
+        ext = ".jpg" if "image/jpeg" in img_src else ".png"
+        
+        link = document.createElement("a")
+        link.href = img_src
+        link.download = f"{file_name}{ext}"
+        link.click()
+
+    def update_color_picker_style():
+        style_target = document.querySelector("#color_picker")
+        if selected_rgb is None:
+            style_target.style.background = "linear-gradient(45deg, #fff 45%, #ff0000 50%, #fff 55%)"
+        else:
+            style_target.style.background = f"rgb({selected_rgb[0]},{selected_rgb[1]},{selected_rgb[2]})"
+
+    def set_color(event):
+        global selected_rgb
+        hex_val = event.target.value.lstrip('#')
+        selected_rgb = tuple(int(hex_val[i:i+2], 16) for i in (0, 2, 4))
+        update_color_picker_style()
+        asyncio.create_task(update_preview(event))
+
+    def reset_color(event):
+        global selected_rgb
+        selected_rgb = None
+        update_color_picker_style()
+        asyncio.create_task(update_preview(event)) 
+
+    proxy_preview = create_proxy(update_preview)
+
+    document.querySelector("#file_upload").addEventListener("change", proxy_preview)
+    document.querySelector("#mosaic_scale").addEventListener("input", proxy_preview)
+    document.querySelector("#dark_mode").addEventListener("change", proxy_preview)
+    document.querySelector("#sirokuro_mode").addEventListener("change", proxy_preview)
+    for el in document.querySelectorAll("input[name='file_format']"):
+        el.addEventListener("change", proxy_preview)
+
+    document.querySelector("#color_picker").addEventListener("input", create_proxy(set_color))
+    document.querySelector("#reset_color").onclick = create_proxy(reset_color)
+    document.querySelector("#process_btn").onclick = create_proxy(download_current_image)
+
     update_color_picker_style()
-    asyncio.create_task(update_preview(event)) 
-
-# --- 4. イベント登録 ---
-proxy_preview = create_proxy(update_preview)
-
-# プレビューを更新する要素
-document.querySelector("#file_upload").addEventListener("change", proxy_preview)
-document.querySelector("#mosaic_scale").addEventListener("input", proxy_preview)
-document.querySelector("#dark_mode").addEventListener("change", proxy_preview)
-document.querySelector("#sirokuro_mode").addEventListener("change", proxy_preview)
-for el in document.querySelectorAll("input[name='file_format']"):
-    el.addEventListener("change", proxy_preview)
-
-document.querySelector("#color_picker").addEventListener("input", create_proxy(set_color))
-document.querySelector("#reset_color").onclick = create_proxy(reset_color)
-
-# 「変換して保存」ボタン（今のプレビュー画像を保存する）
-document.querySelector("#process_btn").onclick = create_proxy(download_current_image)
-
-update_color_picker_style()
-</script>
-
-<head>
-    <meta charset="UTF-8">
-    <title>ダウンロードページ</title>
-
-<div class="center-box">
-    <a href="https://github.com/5-ieat/gazouhenkan/raw/main/%E7%94%BB%E5%83%8F%E5%A4%89%E6%8F%9B%E3%82%BD%E3%83%95%E3%83%88.exe" class="download-button" download>
-        画像変換ソフト.exeをダウンロード 
-    </a>
-</div>
-    <style>
-    /* 親要素（外側の箱）の設定 */
-    .center-box {
-        display: flex;           /* Flexboxを有効にする */
-        justify-content: center; /* 左右の中央に寄せる */
-
-        /* もし上下（垂直方向）も真ん中にしたい場合は、以下も追加します */
-        /* align-items: center; */
-        /* height: 100vh; （画面全体の高さに合わせる場合） */
-    }
-
-/* ボタン自体のデザイン */
-    .download-button {
-        display: inline-block;
-        padding: 12px 24px;
-        background-color: #007bff;
-        color: #ffffff;
-        text-decoration: none;
-        border-radius: 4px;
-        font-weight: bold;
-    }
-</style>
-</head>
-<body>
-
-<div style="margin-top: 30px; background: white; padding: 15px; border-radius: 10px; display: inline-block; box-shadow: 0 2px 5px rgba(0,0,0,0.1);">
-    <form action="https://www.google.com/search" method="get" target="_blank">
-        <label for="google_search">加工する画像を調べるにはこちら：</label>
-        <input type="text" id="google_search" name="q" placeholder="調べること" value="画像素材">
-        <input type="hidden" name="udm" value="2">
-        <button type="submit" style="padding: 5px 10px; background: #28a745; color: white; border: none; border-radius: 3px; cursor: pointer;">Googleで検索</button>
-    </form>
-</div>
-
+    </script>
 </body>
 </html>
