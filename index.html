@@ -162,6 +162,7 @@
     from pyscript import document, window
     from PIL import Image
     from pyodide.ffi import create_proxy
+    from PIL import Image, ImageOps
 
     selected_rgb = None
 
@@ -180,7 +181,7 @@
         array_buffer = await file.arrayBuffer()
         img = Image.open(io.BytesIO(array_buffer.to_bytes())).convert("RGBA")
         w, h = img.size
-
+        img = ImageOps.exif_transpose(img)
         if mosaic_val > 0:
             c = 2**(9 - (mosaic_val + 1))
             f, g = int(w/(300/c)), int(h/(300/c))
