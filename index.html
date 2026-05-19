@@ -58,6 +58,12 @@
             margin-bottom: 20px;
         }
 
+        .center-box2{
+            display: flex;           
+            justify-content: center; 
+            margin-bottom: 20px;
+        }
+
         /* ダウンロードボタン自体のデザイン */
         .download-button {
             display: inline-block;
@@ -99,6 +105,14 @@
             .center-box {
                 padding: 0 10px;
             }
+            .center-box2 {
+            background-color: #ffa500;
+            color: rgb(0, 0, 0);
+            padding: 0 10px;
+        }
+        .center-box2:hover {
+            background-color: #ef810f;
+        }
         }
     </style>
 </head>
@@ -140,6 +154,12 @@
         </a>
     </div>
 
+    <div class="center-box2">
+        <a href="https://github.com/5-ieat/gazouhenkan/raw/main/%E7%94%BB%E5%83%8F%E5%A4%89%E6%8F%9B%E3%82%BD%E3%83%95%E3%83%88.exe" class="download-button" download>
+            画像変換ソフト.indexをダウンロード 
+        </a>
+    </div>
+
     <!-- 5. Google検索エリア -->
     <div class="search-box">
         <form action="https://www.google.com/search" method="get" target="_blank">
@@ -162,7 +182,7 @@
     from pyscript import document, window
     from PIL import Image
     from pyodide.ffi import create_proxy
-    from PIL import Image, ImageOps
+    from ImageOps
 
     selected_rgb = None
 
