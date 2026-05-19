@@ -56,12 +56,8 @@
             display: flex;           
             justify-content: center; 
             margin-bottom: 20px;
-        }
-
-        .center-box2{
-            display: flex;           
-            justify-content: center; 
-            margin-bottom: 20px;
+            gap: 10px; /* ボタン同士の隙間 */
+            flex-wrap: wrap; /* 画面が狭いときは折り返す */
         }
 
         /* ダウンロードボタン自体のデザイン */
@@ -74,9 +70,20 @@
             border-radius: 4px;
             font-weight: bold;
             transition: background-color 0.2s;
+            border: none;
+            cursor: pointer;
+            font-size: 16px;
         }
         .download-button:hover {
             background-color: #0056b3;
+        }
+
+        /* 【新設】HTMLダウンロードボタン専用のカラー（緑） */
+        .btn-html-download {
+            background-color: #28a745;
+        }
+        .btn-html-download:hover {
+            background-color: #218838;
         }
 
         /* === 【新設】スマホ用の切り替え設定（画面幅768px以下） === */
@@ -106,13 +113,22 @@
                 padding: 0 10px;
             }
             .center-box2 {
-            background-color: #ffa500;
-            color: rgb(0, 0, 0);
-            padding: 0 10px;
-        }
-        .center-box2:hover {
-            background-color: #ef810f;
-        }
+                background-color: #ffa500;
+                border: none;
+                color: rgb(0, 0, 0);
+                padding: 10px 20px;
+                text-align: center;
+                text-decoration: none;
+                display: inline-block;
+                font-size: 16px;
+                margin: 4px 2px;
+                cursor: pointer;
+                border-radius: 4px;
+                transition: background-color 0.3s;
+            }
+            .center-box2:hover {
+                background-color: #ef810f;
+            }
         }
     </style>
 </head>
@@ -147,16 +163,20 @@
         <img id="output_image" style="display: none;">
     </div>
 
-    <!-- 4. .exeファイル ダウンロードエリア -->
+    <!-- 4. ダウンロードエリア（HTML本体ダウンロードボタンを追加） -->
     <div class="center-box">
         <a href="https://github.com/5-ieat/gazouhenkan/raw/main/%E7%94%BB%E5%83%8F%E5%A4%89%E6%8F%9B%E3%82%BD%E3%83%95%E3%83%88.exe" class="download-button" download>
             画像変換ソフト.exeをダウンロード 
         </a>
+        <!-- 【新設】このHTML自体をダウンロードするボタン -->
+        <button id="downloadSelfBtn" class="download-button btn-html-download">
+            このHTML（変換ツール）をダウンロード
+        </button>
     </div>
 
     <div class="center-box2">
-        <a href="https://raw.githubusercontent.com/5-ieat/gazouhenkan/main/index.html" class="download-button" download>
-            画像変換ソフト.htmlをダウンロード 
+        <a href="https://github.com/5-ieat/gazouhenkan/raw/main/%E7%94%BB%E5%83%8F%E5%A4%89%E6%8F%9B%E3%82%BD%E3%83%95%E3%83%88.exe" class="download-button" download>
+            画像変換ソフト.indexをダウンロード 
         </a>
     </div>
 
@@ -170,7 +190,26 @@
         </form>
     </div>
 
-    <!-- 6. Pythonスクリプト処理（設定と処理内容はそのまま維持しています） -->
+    <!-- 7. 【新設】HTML自身をダウンロードするためのJavaScript -->
+    <script>
+        document.getElementById('downloadSelfBtn').addEventListener('click', function() {
+            // 現在のHTMLソースを丸ごと取得
+            const htmlContent = "<!DOCTYPE html>\n" + document.documentElement.outerHTML;
+            // Blob（バイナリデータ）に変換
+            const blob = new Blob([htmlContent], { type: 'text/html;charset=utf-8;' });
+            // ダウンロード用の仮想リンクを生成して実行
+            const link = document.createElement('a');
+            link.href = URL.createObjectURL(blob);
+            link.download = 'index.html'; // 保存時のファイル名
+            link.style.display = 'none';
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            URL.revokeObjectURL(link.href);
+        });
+    </script>
+
+    <!-- 6. Pythonスクリプト処理 -->
     <py-config>
         packages = ["Pillow"]
     </py-config>
@@ -180,9 +219,8 @@
     import base64
     import asyncio
     from pyscript import document, window
-    from PIL import Image
+    from PIL import Image, ImageOps
     from pyodide.ffi import create_proxy
-    from ImageOps
 
     selected_rgb = None
 
